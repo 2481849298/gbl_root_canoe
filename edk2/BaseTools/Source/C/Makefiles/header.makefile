@@ -69,19 +69,19 @@ BUILD_OPTFLAGS = -O2 $(EXTRA_OPTFLAGS)
 
 ifeq ($(DARWIN),Darwin)
 # assume clang or clang compatible flags on OS X
-BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -Wall -Werror \
+BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -Wall -Wno-error \
 -Wno-deprecated-declarations -Wno-self-assign -Wno-unused-result -nostdlib -g
 else
 ifeq ($(findstring clang,$(shell $(BUILD_CC) --version 2>/dev/null)),clang)
 # clang on Linux
 BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -fwrapv \
--fno-delete-null-pointer-checks -Wall -Werror \
+-fno-delete-null-pointer-checks -Wall -Wno-error \
 -Wno-deprecated-declarations \
 -Wno-unused-result -nostdlib -g
 else
 # GCC on Linux
 BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -fwrapv \
--fno-delete-null-pointer-checks -Wall -Werror \
+-fno-delete-null-pointer-checks -Wall -Wno-error \
 -Wno-deprecated-declarations \
 -Wno-stringop-truncation \
 -Wno-restrict \

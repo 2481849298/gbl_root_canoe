@@ -3647,7 +3647,13 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 
   if (Status != EFI_SUCCESS) {
     DEBUG ((EFI_D_ERROR, "Error Reading FRP partition: %r\n", Status));
-    return Status;
+    // Force allow unlock even if FRP read fails
+    IsAllowUnlock = TRUE;
+    Status = EFI_SUCCESS;
+  } else if (!IsAllowUnlock) {
+    // Override OEM unlock restriction
+    DEBUG ((EFI_D_WARN, "Overriding OEM unlock restriction\n"));
+    IsAllowUnlock = TRUE;
   }
 
   return EFI_SUCCESS;

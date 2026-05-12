@@ -931,17 +931,13 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 
   UpdatePartitionEntries ();
   /*Check for multislot boot support*/
-#ifndef TEST_ADAPTER
-    Status = ReadAllowUnlockValue (&IsAllowUnlock);
-#else
-    IsAllowUnlock = TRUE; // For test adapter, directly set allow unlock to true to enter fastboot
-    Status = EFI_SUCCESS;
-#endif
-  if (Status != EFI_SUCCESS|| !IsAllowUnlock) {
-    DEBUG ((EFI_D_ERROR, "Unable to read allow unlock value: %r\n", Status));
-#ifndef TEST_ADAPTER
-    LoadIntegratedEfi();
- #endif
+  // Force allow fastboot entry regardless of OEM unlock state
+  IsAllowUnlock = TRUE;
+  Status = EFI_SUCCESS;
+
+  // Suppress unused variable warning
+  if (!IsAllowUnlock) {
+    DEBUG ((EFI_D_ERROR, "Fastboot entry denied\n"));
     return EFI_SUCCESS;
   }
 
