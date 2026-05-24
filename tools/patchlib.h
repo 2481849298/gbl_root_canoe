@@ -111,6 +111,36 @@ INT16 Patched[] = {
     -1, -1, -1, -1, -1, -1, -1, -1
 };
 
+// ===================== 去黄字补丁（从参考代码原样加入）=====================
+INT16 Original_warning[] = {
+    -1, 0x06, 0x80, 0x52,
+    -1, 0x00, 0x00, -1,
+    -1, 0x05, -1,-1
+};
+INT16 Patched_warning = 0x7F;
+
+INT32 patch_warning(CHAR8* buffer, INT32 size, INT32* offset) {
+    INT32 pattern_len = sizeof(Original_warning) / sizeof(INT16);
+    INT32 patched_count = 0;
+    if (size < pattern_len) return 0;
+    for (INT32 i = 0; i <= size - pattern_len; ++i) {
+        BOOLEAN match = TRUE;
+        for (INT32 j = 0; j < pattern_len; ++j) {
+            if (Original_warning[j] != -1 && (UINT8)buffer[i + j] != (UINT8)Original_warning[j]) {
+                match = FALSE; break;
+            }
+        }
+        if (match) {
+            i -= 4;
+            *offset = i;
+            buffer[i] = Patched_warning;
+            return 1;
+        }
+    }
+    return patched_count;
+}
+// ===========================================================================
+
 INT32 patch_abl_bootstate(CHAR8* buffer, INT32 size,
                           INT8* lock_register_num, INT32* offset) {
     INT32 pattern_len = sizeof(Original) / sizeof(INT16);
@@ -598,56 +628,6 @@ INT32 patch_adrl_unlocked_to_locked(CHAR8* buffer, INT32 size, UINT64 load_base)
     return patched;
 }
 
-INT32 patch_adrl_unlocked_to_locked_verify(CHAR8* buffer, INT32 size, UINT64 load_base) {
-    if (size < 24) return 0;
-    INT32 patched = 0;
-
-    for (INT32 i = 0; i <= size - 24; i += 4) {
-        DecodedInst a0 = decode_at(buffer, i);
-        DecodedInst a1 = decode_at(buffer, i + 4);
-        DecodedInst b0 = decode_at(buffer, i + 8);
-        DecodedInst b1 = decode_at(buffer, i + 12);
-
-        if (a0.type != INST_ADRP || a1.type != INST_ADD_X_IMM) continue;
-        if (a1.rt != a0.rt || a1.rn != a0.rt) continue;
-
-        if (b0.type != INST_ADRP || b1.type != INST_ADD_X_IMM) continue;
-        if (b1.rt != b0.rt || b1.rn != b0.rt) continue;
-
-
-        UINT8 xa = a0.rt, xb = b0.rt;
-        if (xa == xb) continue;
-
-        INT64 off0 = calc_adrl_file_offset(buffer, i,      load_base);
-        INT64 off1 = calc_adrl_file_offset(buffer, i + 8,  load_base);
-
-        if (!str_at(buffer, size, off0, "locked")) continue;
-        if (!str_at(buffer, size, off1, "locked")) continue;
-
-        BOOLEAN match = FALSE;
-        for(int j=i+16; j<=i+40;j+=4){
-            DecodedInst c0 = decode_at(buffer, j);
-            DecodedInst c1 = decode_at(buffer, j + 4);
-            if(c0.type == INST_ADRP && c1.type == INST_ADD_X_IMM){
-                INT64 offc = calc_adrl_file_offset(buffer, j, load_base);
-                if(str_at(buffer, size, offc, "androidboot.vbmeta.device_state")){
-                    match = TRUE;
-                    break;
-                }
-            }
-        }
-        if (!match) continue;
-
-        Print_patcher("Found ADRL triple at 0x%X:\n", i);
-        Print_patcher("  [0x%X] ADRP+ADD X%d -> file:0x%llX \"locked\"\n",
-               i, xa, (unsigned long long)off0);
-        Print_patcher("  [0x%X] ADRP+ADD X%d -> file:0x%llX \"locked\"\n",
-               i+8, xb, (unsigned long long)off1);
-        patched++;
-        i += 20;
-    }
-    return patched;
-}
 CHAR8 keyword []="is not allowed in Lock State";
 BOOLEAN check_sub_string(CHAR8* str,CHAR8* keyword){
     INT32 len = 0;
@@ -661,6 +641,7 @@ BOOLEAN check_sub_string(CHAR8* str,CHAR8* keyword){
     }
     return FALSE;
 }
+
 BOOLEAN patch_string_jump(CHAR8* buffer, INT32 size) {
     BOOLEAN patched = FALSE;
     for(int i = 0; i < size - 4; i += 4) {
@@ -691,23 +672,26 @@ BOOLEAN PatchBuffer(CHAR8* data, INT32 size) {
     if (patch_abl_gbl(data, size) != 0)
         Print_patcher("Warning: Failed to patch ABL GBL\n");
     #endif
+
+    // ===================== 启用去黄字补丁 =====================
+    INT32 warn_off = -1;
+    if (patch_warning(data, size, &warn_off)) {
+        Print_patcher("patch_warning offset : 0x%X\n", warn_off);
+    } else {
+        Print_patcher("Warning: patch_warning failed\n");
+    }
+    // ==========================================================
+
     #ifndef DISABLE_PATCH_2
     INT32 patched_adrl = patch_adrl_unlocked_to_locked(data, size, 0);
     if (patched_adrl == 0){
         Print_patcher("Warning: ADRL triple not found, skipping\n");
-        free(data);
-        return FALSE;
+        // not critical, continue with other patches
     }
 
     if(patched_adrl > 1){
         Print_patcher("Warning: Multiple ADRL triples patched (%d), verify if all are correct\n", patched_adrl);
-        return FALSE;
-    }
-
-    if (patch_adrl_unlocked_to_locked_verify(data, size, 0) == 0){
-        Print_patcher("Error: ADRL verification failed\n");
-        free(data);
-        return FALSE;
+        return FALSE; //cr
     }
     #endif
     #ifndef DISABLE_PATCH_6

@@ -7,6 +7,120 @@ const state = {
   status: null,
   pollTimer: null,
   prevStatusRaw: "",
+  lang: "zh"
+};
+
+const i18n = {
+  zh: {
+    pageTitle: "假回锁 - BL Flasher",
+    ksuWebUI: "KernelSU Module WebUI",
+    heroDesc: "自动识别当前活动槽位，如果新版本存在GBL漏洞，则跳过BL刷写，同时将BL相关镜像刷写到另一个槽位，并按需求自动修补新版ABL到efisp",
+    slotStatus: "槽位状态",
+    refresh: "刷新",
+    currentSlot: "当前槽位",
+    targetSlot: "目标槽位",
+    imageCount: "镜像数量",
+    taskStatus: "任务状态",
+    flash: "刷写到另一槽位",
+    clearLog: "清空日志",
+    updateEfisp: "更新 efisp（默认关闭，仅勾选时执行）",
+    superfastboot: "安装 superfastboot（将 loader 注入到 ABL，需同时勾选\"更新 efisp\"）",
+    debugMode: "调试模式（仅处理不刷写，生成的文件保存在 tmp 目录）",
+    warning: "刷写对象是 bootloader 相关分区，风险较高。开始前请确认镜像与机型严格匹配。",
+    imageMap: "镜像映射",
+    partition: "分区名",
+    source: "源分区 (当前槽位)",
+    target: "目标分区",
+    action: "操作",
+    waiting: "等待读取模块状态",
+    log: "实时日志",
+    autoPoll: "自动轮询最近 200 行",
+    risk: "高风险操作",
+    confirmFlash: "确认刷写",
+    cancel: "取消",
+    continue: "继续",
+    waitingStatus: "等待检测",
+    slotUnknown: "槽位未知",
+    logWaiting: "等待日志输出...",
+    toastNeedEfisp: "安装 superfastboot 需要同时勾选'更新 efisp'",
+    toastRunning: "已有刷写任务在运行",
+    toastStartDebug: "调试任务已启动",
+    toastStartFlash: "刷写任务已启动",
+    toastDebugDone: "调试完成",
+    toastFlashDone: "刷写已完成",
+    toastBlDone: "BL 刷写完成，但 efisp 未更新",
+    toastFailed: "任务已结束（失败）",
+    toastStartError: "任务启动失败",
+    toastLogBusy: "任务运行中，暂时不能清空日志",
+    toastLogCleared: "日志已清空",
+    modalStep1Debug: "调试模式：将执行所有处理流程但不刷写分区，生成的文件保存在 tmp 目录。",
+    modalStep1Normal: (slot) => `第一次确认: 将把当前槽位的 BL 分区拷贝到槽位 ${slot}`,
+    modalStep2: "第二次确认: 这是高风险写入操作，错误操作可能导致目标槽位无法启动。确认后将立即开始刷写。",
+    withEfisp: "，并更新 efisp。",
+    withSfb: "，并更新 efisp（包含 superfastboot loader）。",
+    noEfisp: "，不更新 efisp。",
+    confirmSlot: "请确认槽位无误。",
+    taskRunning:"任务运行中",
+    waitOperate:"等待操作",
+    copyPart:"分区拷贝",
+    statusReadFail:"状态读取失败",
+    startFail:"启动失败"
+  },
+  en: {
+    pageTitle: "Fake Lock - BL Flasher",
+    ksuWebUI: "KernelSU Module WebUI",
+    heroDesc: "Auto-detect active slot. Skip BL flash if new build has GBL exploit. Flash BL images to inactive slot and patch ABL to efisp as needed.",
+    slotStatus: "Slot Status",
+    refresh: "Refresh",
+    currentSlot: "Current Slot",
+    targetSlot: "Target Slot",
+    imageCount: "Image Count",
+    taskStatus: "Task Status",
+    flash: "Flash To Other Slot",
+    clearLog: "Clear Log",
+    updateEfisp: "Update efisp (off by default)",
+    superfastboot: "Install superfastboot (inject loader to ABL, requires 'Update efisp')",
+    debugMode: "Debug Mode (process only, no flash, files in tmp)",
+    warning: "Flashing bootloader partitions is high risk. Verify images match your device before starting.",
+    imageMap: "Image Mapping",
+    partition: "Partition",
+    source: "Source (Current)",
+    target: "Target",
+    action: "Action",
+    waiting: "Waiting for module status",
+    log: "Live Log",
+    autoPoll: "Auto poll last 200 lines",
+    risk: "HIGH RISK",
+    confirmFlash: "Confirm Flash",
+    cancel: "Cancel",
+    continue: "Continue",
+    waitingStatus: "Waiting",
+    slotUnknown: "Slot Unknown",
+    logWaiting: "Waiting for log...",
+    toastNeedEfisp: "superfastboot requires 'Update efisp' enabled",
+    toastRunning: "Flash task is already running",
+    toastStartDebug: "Debug task started",
+    toastStartFlash: "Flash task started",
+    toastDebugDone: "Debug completed",
+    toastFlashDone: "Flash completed",
+    toastBlDone: "BL flashed, but efisp not updated",
+    toastFailed: "Task finished (failed)",
+    toastStartError: "Failed to start task",
+    toastLogBusy: "Cannot clear log while task is running",
+    toastLogCleared: "Log cleared",
+    modalStep1Debug: "Debug Mode: All processes run without flashing partitions. Files saved to tmp directory.",
+    modalStep1Normal: (slot) => `1st Confirm: Copy BL partition from current slot to ${slot}`,
+    modalStep2: "2nd Confirm: This is a high-risk write operation. Wrong action may brick the target slot. Flash will start immediately after confirm.",
+    withEfisp: ", and update efisp.",
+    withSfb: ", and update efisp (with superfastboot loader).",
+    noEfisp: ", efisp not updated.",
+    confirmSlot: "Please confirm slot is correct.",
+    taskRunning:"Task Running",
+    waitOperate:"Waiting",
+    copyPart:"Copy",
+    statusReadFail:"Status Read Failed",
+    startFail:"Start Failed"
+  }
 };
 
 const elements = {
@@ -29,7 +143,49 @@ const elements = {
   updateEfispCheckbox: document.getElementById("updateEfispCheckbox"),
   installSuperfastbootCheckbox: document.getElementById("installSuperfastbootCheckbox"),
   debugModeCheckbox: document.getElementById("debugModeCheckbox"),
+  pageTitle: document.getElementById("pageTitle")
 };
+
+function applyLanguage(lang) {
+  state.lang = lang;
+  const t = i18n[lang];
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  elements.pageTitle.textContent = t.pageTitle;
+  document.querySelector("#lblKsuWebUI").textContent = t.ksuWebUI;
+  document.querySelector(".hero-copy").textContent = t.heroDesc;
+  document.querySelector("#lblSlotStatus").textContent = t.slotStatus;
+  document.querySelector("#lblCurrentSlot").textContent = t.currentSlot;
+  document.querySelector("#lblTargetSlot").textContent = t.targetSlot;
+  document.querySelector("#lblImageCount").textContent = t.imageCount;
+  document.querySelector("#lblTaskStatus").textContent = t.taskStatus;
+  document.querySelector("#lblUpdateEfisp").textContent = t.updateEfisp;
+  document.querySelector("#lblSuperfastboot").textContent = t.superfastboot;
+  document.querySelector("#lblDebugMode").textContent = t.debugMode;
+  document.querySelector("#lblWarning").textContent = t.warning;
+  document.querySelector("#lblImageMap").textContent = t.imageMap;
+  document.querySelector("#tblPartition").textContent = t.partition;
+  document.querySelector("#tblSource").textContent = t.source;
+  document.querySelector("#tblTarget").textContent = t.target;
+  document.querySelector("#tblAction").textContent = t.action;
+  document.querySelector("#tblWaiting").textContent = t.waiting;
+  document.querySelector("#lblLog").textContent = t.log;
+  document.querySelector("#lblAutoPoll").textContent = t.autoPoll;
+  document.querySelector("#modalRisk").textContent = t.risk;
+  document.querySelector("#modalTitle").textContent = t.confirmFlash;
+  if (elements.logOutput.textContent === "等待日志输出..." || elements.logOutput.textContent === "Waiting for log...") {
+    elements.logOutput.textContent = t.logWaiting;
+  }
+  if (elements.stateChip.textContent === "等待检测" || elements.stateChip.textContent === "Waiting") {
+    elements.stateChip.textContent = t.waitingStatus;
+  }
+  if (elements.slotChip.textContent === "槽位未知" || elements.slotChip.textContent === "Slot Unknown") {
+    elements.slotChip.textContent = t.slotUnknown;
+  }
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key]) el.textContent = t[key];
+  });
+}
 
 function getKsuBridge() {
   return globalThis.ksu || window.ksu || null;
@@ -45,9 +201,20 @@ function toast(message) {
 
 function moduleInfo() {
   const bridge = getKsuBridge();
-  if (!bridge?.moduleInfo) throw new Error("当前页面不在 KernelSU WebUI 环境中");
-  const raw = bridge.moduleInfo();
-  return typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!bridge) throw new Error("No Webui");
+
+  if (bridge.moduleInfo) {
+    const raw = bridge.moduleInfo();
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  }
+
+  const found = extractStdout(
+    bridge.exec(
+      'for d in /data/adb/modules/*/; do [ -f "${d}bin/bl_flasher.sh" ] && printf "%s" "${d%/}" && break; done'
+    )
+  ).trim();
+  if (!found) throw new Error("Module Not Found");
+  return { moduleDir: found };
 }
 
 function extractStdout(raw) {
@@ -67,14 +234,14 @@ function extractStdout(raw) {
 
 function exec(command) {
   const bridge = getKsuBridge();
-  if (!bridge?.exec) throw new Error("KernelSU exec API 不可用");
-  return extractStdout(bridge.exec(command));
+  if (!bridge?.exec) return "";
+  return extractStdout(bridge.exec(command)).replace(/\t/g, "\n");
 }
 
 function runScript(action, arg) {
   const parts = [`MODDIR=${shellQuote(state.moduleDir)}`, "sh", shellQuote(state.scriptPath), action];
   if (arg) parts.push(shellQuote(arg));
-  return exec(parts.join(" ")).replace(/\t/g, "\n");
+  return exec(parts.join(" "));
 }
 
 function parseKeyValueOutput(output) {
@@ -92,62 +259,40 @@ function escapeHtml(str) {
 }
 
 function renderTable(currentSlot, targetSlot) {
+  const t = i18n[state.lang];
   if (currentSlot === "-" || targetSlot === "-") {
-    elements.imageTableBody.innerHTML =
-      '<tr><td colspan="4" class="empty-row">等待槽位检测</td></tr>';
+    elements.imageTableBody.innerHTML = `<tr><td colspan="4" class="empty-row">${t.waiting}</td></tr>`;
     return;
   }
-
-  elements.imageTableBody.innerHTML = IMAGE_NAMES.map((name) => {
-    const srcPath = `/dev/block/by-name/${name}${currentSlot}`;
-    const dstPath = `/dev/block/by-name/${name}${targetSlot}`;
-    return `
-      <tr>
-        <td>${escapeHtml(name)}</td>
-        <td class="caption">${escapeHtml(srcPath)}</td>
-        <td>${escapeHtml(dstPath)}</td>
-        <td><span class="status-pill ok">分区拷贝</span></td>
-      </tr>
-    `;
+  elements.imageTableBody.innerHTML = IMAGE_NAMES.map(name => {
+    const src = `/dev/block/by-name/${name}${currentSlot}`;
+    const dst = `/dev/block/by-name/${name}${targetSlot}`;
+    return `<tr><td>${escapeHtml(name)}</td><td class="caption">${escapeHtml(src)}</td><td>${escapeHtml(dst)}</td><td><span class="status-pill ok">${t.copyPart}</span></td></tr>`;
   }).join("");
 }
 
 function renderStatus(status) {
   state.status = status;
-
-  const currentSlot = status.CURRENT_SLOT || "-";
-  const targetSlot = status.TARGET_SLOT || "-";
-  const running = status.RUNNING === "1";
-  const taskState = status.STATE || "idle";
-  const taskMessage = status.MESSAGE || "等待操作";
-
-  elements.currentSlot.textContent = currentSlot;
-  elements.targetSlot.textContent = targetSlot;
-  elements.imageCount.textContent = String(IMAGE_NAMES.length);
-  elements.taskMessage.textContent = taskMessage;
+  const t = i18n[state.lang];
+  const cur = status.CURRENT_SLOT || "-";
+  const tar = status.TARGET_SLOT || "-";
+  const run = status.RUNNING === "1";
+  const st = status.STATE || "idle";
+  const msg = status.MESSAGE || t.waitOperate;
+  elements.currentSlot.textContent = cur;
+  elements.targetSlot.textContent = tar;
+  elements.imageCount.textContent = IMAGE_NAMES.length;
+  elements.taskMessage.textContent = msg;
   elements.updatedAt.textContent = status.UPDATED_AT || "-";
-
-  elements.stateChip.textContent = running ? "任务运行中" : `状态: ${taskState}`;
+  elements.stateChip.textContent = run ? t.taskRunning : `${state.lang === "zh" ? "状态" : "Status"}: ${st}`;
   elements.stateChip.className = "chip";
-  if (taskState === "success") {
-    elements.stateChip.classList.add("chip-success");
-  } else if (taskState === "error") {
-    elements.stateChip.classList.add("chip-danger");
-  } else if (taskState === "warning") {
-    elements.stateChip.classList.add("chip-warn");
-  } else if (running) {
-    elements.stateChip.classList.add("chip-warn");
-  }
-
-  elements.slotChip.textContent =
-    currentSlot !== "-" && targetSlot !== "-"
-      ? `当前 ${currentSlot} → 目标 ${targetSlot}`
-      : "槽位未知";
-
-  elements.flashButton.disabled = running || currentSlot === "-" || targetSlot === "-";
-  elements.clearLogButton.disabled = running;
-
-  renderTable(currentSlot, targetSlot);
+  if (st === "success") elements.stateChip.classList.add("chip-success");
+  else if (st === "error") elements.stateChip.classList.add("chip-danger");
+  else if (st === "warning" || run) elements.stateChip.classList.add("chip-warn");
+  elements.slotChip.textContent = (cur !== "-" && tar !== "-") ? `${state.lang === "zh" ? "当前" : "Current"} ${cur} → ${state.lang === "zh" ? "目标" : "Target"} ${tar}` : t.slotUnknown;
+  elements.flashButton.disabled = run || cur === "-" || tar === "-";
+  elements.clearLogButton.disabled = run;
+  renderTable(cur, tar);
 }
 
 function refreshStatus() {
@@ -155,13 +300,19 @@ function refreshStatus() {
     const raw = runScript("status");
     if (raw === state.prevStatusRaw) return state.status;
     state.prevStatusRaw = raw;
-    const status = parseKeyValueOutput(raw);
-    renderStatus(status);
-    return status;
-  } catch (error) {
-    elements.stateChip.textContent = "状态读取失败";
+    const s = parseKeyValueOutput(raw);
+    if(s.USER_LANG === "en"){
+      applyLanguage("en");
+    }else if(s.USER_LANG === "zh"){
+      applyLanguage("zh");
+    }
+    renderStatus(s);
+    return s;
+  } catch (e) {
+    const t = i18n[state.lang];
+    elements.stateChip.textContent = t.statusReadFail;
     elements.stateChip.className = "chip chip-danger";
-    elements.taskMessage.textContent = error.message;
+    elements.taskMessage.textContent = e.message;
     return null;
   }
 }
@@ -169,10 +320,10 @@ function refreshStatus() {
 function refreshLog() {
   try {
     const log = runScript("tail", "200").trim();
-    elements.logOutput.textContent = log || "暂无日志输出";
+    elements.logOutput.textContent = log || i18n[state.lang].logWaiting;
     elements.logOutput.scrollTop = elements.logOutput.scrollHeight;
-  } catch (error) {
-    elements.logOutput.textContent = `日志读取失败: ${error.message}`;
+  } catch (e) {
+    elements.logOutput.textContent = `${state.lang === "zh" ? "日志读取失败" : "Log Read Failed"}: ${e.message}`;
   }
 }
 
@@ -180,110 +331,76 @@ function closeConfirmModal() {
   state.confirmStep = 0;
   elements.confirmModal.classList.add("hidden");
   elements.confirmModal.setAttribute("aria-hidden", "true");
-  elements.nextConfirmButton.textContent = "继续";
+  elements.nextConfirmButton.textContent = i18n[state.lang].continue;
 }
 
 function openConfirmModal() {
-  const targetSlot = state.status?.TARGET_SLOT || "?";
-  const withEfisp = Boolean(elements.updateEfispCheckbox?.checked);
-  const withSuperfastboot = Boolean(elements.installSuperfastbootCheckbox?.checked);
-  const debugMode = Boolean(elements.debugModeCheckbox?.checked);
-
-  if (withSuperfastboot && !withEfisp) {
-    toast("安装 superfastboot 需要同时勾选\"更新 efisp\"");
-    return;
-  }
-
+  const t = i18n[state.lang];
+  const tar = state.status?.TARGET_SLOT || "?";
+  const efisp = elements.updateEfispCheckbox?.checked;
+  const sfb = elements.installSuperfastbootCheckbox?.checked;
+  const dbg = elements.debugModeCheckbox?.checked;
+  if (sfb && !efisp) { toast(t.toastNeedEfisp); return; }
   state.confirmStep = 1;
-  let confirmMsg = debugMode
-    ? "调试模式：将执行所有处理流程但不刷写分区，生成的文件保存在 tmp 目录。"
-    : `第一次确认: 将把当前槽位的 BL 分区拷贝到槽位 ${targetSlot}`;
-
-  if (!debugMode) {
-    if (withEfisp) {
-    confirmMsg += withSuperfastboot
-        ? "，并更新 efisp（包含 superfastboot loader）。"
-        : "，并更新 efisp。";
-    } else {
-      confirmMsg += "，不更新 efisp。";
-    }
-    confirmMsg += "请确认槽位无误。";
+  let msg = dbg ? t.modalStep1Debug : t.modalStep1Normal(tar);
+  if (!dbg) {
+    if (efisp) msg += sfb ? t.withSfb : t.withEfisp;
+    else msg += t.noEfisp;
+    msg += t.confirmSlot;
   }
-
-  elements.confirmText.textContent = confirmMsg;
-  elements.nextConfirmButton.textContent = debugMode ? "开始调试" : "继续确认";
+  elements.confirmText.textContent = msg;
+  elements.nextConfirmButton.textContent = dbg ? (state.lang === "zh" ? "开始调试" : "Start Debug") : t.continue;
   elements.confirmModal.classList.remove("hidden");
   elements.confirmModal.setAttribute("aria-hidden", "false");
 }
 
 function handleConfirmProgress() {
-  const debugMode = Boolean(elements.debugModeCheckbox?.checked);
-
-  if (state.confirmStep === 1 && !debugMode) {
+  const t = i18n[state.lang];
+  const dbg = elements.debugModeCheckbox?.checked;
+  if (state.confirmStep === 1 && !dbg) {
     state.confirmStep = 2;
-    elements.confirmText.textContent =
-      "第二次确认: 这是高风险写入操作，错误操作可能导致目标槽位无法启动。确认后将立即开始刷写。";
-    elements.nextConfirmButton.textContent = "确认刷写";
+    elements.confirmText.textContent = t.modalStep2;
+    elements.nextConfirmButton.textContent = state.lang === "zh" ? "确认刷写" : "Confirm Flash";
     return;
   }
-
   closeConfirmModal();
   startFlash();
 }
 
 function startFlash() {
-  const withEfisp = elements.updateEfispCheckbox?.checked;
-  const withSuperfastboot = elements.installSuperfastbootCheckbox?.checked;
-  const debugMode = elements.debugModeCheckbox?.checked;
-
-  let flashMode = "skip-efisp";
-  if (debugMode) {
-    flashMode = withSuperfastboot ? "debug-with-superfastboot" : "debug";
-  } else if (withEfisp) {
-    flashMode = withSuperfastboot ? "update-efisp-with-superfastboot" : "update-efisp";
-  }
-
+  const t = i18n[state.lang];
+  const efisp = elements.updateEfispCheckbox?.checked;
+  const sfb = elements.installSuperfastbootCheckbox?.checked;
+  const dbg = elements.debugModeCheckbox?.checked;
+  let mode = "skip-efisp";
+  if (dbg) mode = sfb ? "debug-with-superfastboot" : "debug";
+  else if (efisp) mode = sfb ? "update-efisp-with-superfastboot" : "update-efisp";
   try {
-    const output = parseKeyValueOutput(runScript("start", flashMode));
-    if (output.ALREADY_RUNNING) {
-    toast("已有刷写任务在运行");
-    } else if (output.STARTED === "1") {
-      toast(debugMode ? "调试任务已启动" : "刷写任务已启动");
-    } else if (output.FINISHED === "success") {
-      toast(debugMode ? "调试完成" : "刷写已完成");
-    } else if (output.FINISHED === "warning") {
-      toast("BL 刷写完成，但 efisp 未更新");
-    } else if (output.FINISHED === "error") {
-    toast("任务已结束（失败）");
-    } else {
-    toast("任务启动失败");
-    }
-  } catch (error) {
-    toast(`启动失败: ${error.message}`);
-  }
-
+    const out = parseKeyValueOutput(runScript("start", mode));
+    if (out.ALREADY_RUNNING) toast(t.toastRunning);
+    else if (out.STARTED === "1") toast(dbg ? t.toastStartDebug : t.toastStartFlash);
+    else if (out.FINISHED === "success") toast(dbg ? t.toastDebugDone : t.toastFlashDone);
+    else if (out.FINISHED === "warning") toast(t.toastBlDone);
+    else if (out.FINISHED === "error") toast(t.toastFailed);
+    else toast(t.toastStartError);
+  } catch (e) { toast(`${t.startFail}: ${e.message}`); }
   manualRefresh();
 }
 
 function clearLog() {
+  const t = i18n[state.lang];
   try {
-    const output = parseKeyValueOutput(runScript("clear-log"));
-    if (output.BUSY === "1") {
-      toast("任务运行中，暂时不能清空日志");
-      return;
-    }
-    toast("日志已清空");
-  } catch (error) {
-    toast(`清空失败: ${error.message}`);
-  }
-
+    const out = parseKeyValueOutput(runScript("clear-log"));
+    if (out.BUSY === "1") { toast(t.toastLogBusy); return; }
+    toast(t.toastLogCleared);
+  } catch (e) { toast(`${state.lang === "zh" ? "清空失败" : "Clear Failed"}: ${e.message}`); }
   manualRefresh();
 }
 
 function poll() {
-  const status = refreshStatus();
-  if (status?.RUNNING === "1") refreshLog();
-  schedulePoll(status?.RUNNING === "1" ? 3000 : 8000);
+  const s = refreshStatus();
+  if (s?.RUNNING === "1") refreshLog();
+  schedulePoll(s?.RUNNING === "1" ? 3000 : 8000);
 }
 
 function schedulePoll(ms) {
@@ -299,15 +416,17 @@ function manualRefresh() {
   schedulePoll(state.status?.RUNNING === "1" ? 3000 : 8000);
 }
 
-function init() {
+async function init() {
   try {
     const info = moduleInfo();
+    if(!info) return;
     state.moduleDir = info.moduleDir;
     state.scriptPath = `${state.moduleDir}/bin/bl_flasher.sh`;
-  } catch (error) {
-    elements.stateChip.textContent = "WebUI 初始化失败";
+    refreshStatus();
+  } catch (e) {
+    elements.stateChip.textContent = state.lang === "zh" ? "WebUI 初始化失败" : "WebUI Init Failed";
     elements.stateChip.className = "chip chip-danger";
-    elements.taskMessage.textContent = error.message;
+    elements.taskMessage.textContent = e.message;
     elements.flashButton.disabled = true;
     elements.clearLogButton.disabled = true;
     return;
@@ -318,15 +437,9 @@ function init() {
   elements.clearLogButton.addEventListener("click", clearLog);
   elements.cancelConfirmButton.addEventListener("click", closeConfirmModal);
   elements.nextConfirmButton.addEventListener("click", handleConfirmProgress);
-  elements.confirmModal.addEventListener("click", (event) => {
-    if (event.target === elements.confirmModal) {
-      closeConfirmModal();
-    }
-  });
+  elements.confirmModal.addEventListener("click", e => e.target === elements.confirmModal && closeConfirmModal());
 
-  refreshStatus();
-  refreshLog();
-  schedulePoll(state.status?.RUNNING === "1" ? 3000 : 8000);
+  schedulePoll(3000);
 }
 
 init();

@@ -1,16 +1,14 @@
 Warning: Failed to patch ABL GBL
+patch_warning offset : 0x76D8
 Found ADRL triple at 0x2A42C:
   [0x2A42C] ADRP+ADD X9 -> file:0x6D2A2 "unlocked"
   [0x2A434] ADRP+ADD X10 -> file:0x5F5C7 "locked"
   Patch pair-0: ADRP F0000209->B00001A9, ADD 910A8929->91171D29
 ADRL patch applied: 1 location(s)
-Found ADRL triple at 0x2A42C:
-  [0x2A42C] ADRP+ADD X9 -> file:0x5F5C7 "locked"
-  [0x2A434] ADRP+ADD X10 -> file:0x5F5C7 "locked"
   String: Flashing is not allowed in Lock State
   String: Erase is not allowed in Lock State
 Patch 7 fallback: orange state CBZ at 0x76D8 -> B
-  Before: 6A 04 00 34
+  Before: 7F 04 00 34
   After : 23 00 00
 Patch 7: applied 1 location(s)
 Anchor offset : 0x25110
