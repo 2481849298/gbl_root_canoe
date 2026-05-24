@@ -441,114 +441,6 @@ static BOOLEAN str_at(const CHAR8* buffer, INT32 size, INT64 file_off, const CHA
     return memcmp_patcher(buffer + file_off, needle, len) == 0;
 }
 
-static BOOLEAN rewrite_cbz_as_b(CHAR8* buffer, INT32 cbz_off) {
-    UINT32 raw = 0;
-    INT32 imm19;
-    UINT32 branch;
-
-    memcpy_patcher(&raw, buffer + cbz_off, 4);
-    imm19 = (INT32)((raw >> 5) & 0x7FFFF);
-    if (imm19 & 0x40000)
-        imm19 |= ~0x7FFFF;
-
-    branch = 0x14000000U | ((UINT32)imm19 & 0x03FFFFFFU);
-    write_instr(buffer, cbz_off, branch);
-    return TRUE;
-}
-
-/*
- * Patch 7: Skip orange state screen, warning text, and 5-second boot delay.
- *
- * LinuxLoaderEntry contains:
- *   if (DAT_000b13c5 != 0) {          // unlocked flag
- *       FUN_000028b0(..., "Your device has been unlocked...", ...);
- *       FUN_000028b0(..., "Your device will boot in 5 seconds", ...);
- *       DAT_00081f0c = 3;
- *       DAT_00081f18 = uVar11;
- *       FUN_00031560();               // ShowDeviceStatetoscreen
- *   }
- *
- * The guard is a CBZ that skips the block when locked (Wt==0).
- * We rewrite that guard as an unconditional B, so the whole block is skipped
- * regardless of lock state.
- *
- * Anchor: the unique 8-byte sequence ending with the CBZ:
- *   36 31 88 1A  (AND/CSEL before the branch)
- *   ?? 04 00 34  (CBZ Wt, +#imm — Rt field varies, upper 3 bytes fixed)
- *
- * Fallback anchor: the countdown loop inside the warning block.
- */
-INT32 patch_orange_state_screen(CHAR8* buffer, INT32 size) {
-    static const UINT8 anchor[] = { 0x36, 0x31, 0x88, 0x1A };
-    static const UINT8 cbz_hi[] = { 0x04, 0x00, 0x34 };
-    static const INT16 delay_anchor[] = {
-        -1, 0x06, 0x80, 0x52,
-        -1, 0x00, 0x00, -1,
-      -1, 0x05, -1, -1
-    };
-
-    INT32 patched = 0;
-
-    for (INT32 i = 0; i <= size - 8; i += 4) {
-        if (memcmp_patcher(buffer + i,     anchor, 4) != 0) continue;
-    if (memcmp_patcher(buffer + i + 5, cbz_hi, 3) != 0) continue;
-        #ifndef DISABLE_PRINT
-        Print_patcher("Patch 7: orange state CBZ at 0x%X  W%d -> B\n",
-                   i + 4, (int)((UINT8)buffer[i + 4] & 0x1F));
-        Print_patcher("  Before: %02X %02X %02X %02X\n",
-                      (UINT8)buffer[i+4], (UINT8)buffer[i+5],
-                      (UINT8)buffer[i+6], (UINT8)buffer[i+7]);
-        #endif
-        rewrite_cbz_as_b(buffer, i + 4);
-        #ifndef DISABLE_PRINT
-        Print_patcher("  After : %02X %02X %02X %02X\n",
-                 (UINT8)buffer[i+4], (UINT8)buffer[i+5],
-                  (UINT8)buffer[i+6], (UINT8)buffer[i+7]);
-        #endif
-      patched++;
-    }
-
-    if (patched == 0) {
-        INT32 pattern_len = sizeof(delay_anchor) / sizeof(INT16);
-
-        for (INT32 i = 0; i <= size - pattern_len; ++i) {
-            BOOLEAN match = TRUE;
-            for (INT32 j = 0; j < pattern_len; ++j) {
-         if (delay_anchor[j] != -1 &&
-                    (UINT8)buffer[i + j] != (UINT8)delay_anchor[j]) {
-                match = FALSE;
-              break;
-                }
-            }
-      if (!match || i < 4)
-                continue;
-
-            #ifndef DISABLE_PRINT
-            Print_patcher("Patch 7 fallback: orange state CBZ at 0x%X -> B\n", i - 4);
-        Print_patcher("  Before: %02X %02X %02X %02X\n",
-                          (UINT8)buffer[i-4], (UINT8)buffer[i-3],
-                          (UINT8)buffer[i-2], (UINT8)buffer[i-1]);
-            #endif
-            rewrite_cbz_as_b(buffer, i - 4);
-            #ifndef DISABLE_PRINT
-            Print_patcher("  After : %02X %02X %02X\n",
-            (UINT8)buffer[i-4], (UINT8)buffer[i-3],
-                          (UINT8)buffer[i-2], (UINT8)buffer[i-1]);
-            #endif
-            patched++;
-         break;
-      }
-    }
-
-    #ifndef DISABLE_PRINT
-    if (patched == 0)
-        Print_patcher("Patch 7: orange state CBZ not found\n");
-    else
-        Print_patcher("Patch 7: applied %d location(s)\n", patched);
-    #endif
-    return patched;
-}
-
 static INT64 calc_adrl_file_offset(const CHAR8* buffer, INT32 adrp_off, UINT64 load_base) {
     DecodedInst d0 = decode_at(buffer, adrp_off);
     DecodedInst d1 = decode_at(buffer, adrp_off + 4);
@@ -697,10 +589,6 @@ BOOLEAN PatchBuffer(CHAR8* data, INT32 size) {
     #ifndef DISABLE_PATCH_6
     if (!patch_string_jump(data, size))
      Print_patcher("Warning: Failed to patch string jump\n");
-    #endif
-    #ifndef DISABLE_PATCH_7
-    if (patch_orange_state_screen(data, size) == 0)
-        Print_patcher("Warning: Orange state screen patch not applied\n");
     #endif
     INT32 offset = -1;
     INT8 lock_register_num = -1;
