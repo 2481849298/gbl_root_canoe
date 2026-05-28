@@ -31,3 +31,9 @@ target_magisk_module:
 
 dev_target_extract_and_patch:
 	cd dev_targets/extract_and_patch && make patch
+
+# tools not dependency of main project, build separately
+tools_vbmetafixer_linux:
+	cd tools/vbmetafixer && make build
+tools_vbmetafixer_windows:
+	cd tools/vbmetafixer && make build_windows
