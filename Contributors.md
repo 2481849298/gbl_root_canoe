@@ -35,6 +35,11 @@ docker构建脚本
 
 ---
 
+## cvhhji@github
+module i18n
+
+---
+
 ## 测试贡献 / Testing Contributions
 
 ### 林黛玉倒拔垂杨柳@coolapk  

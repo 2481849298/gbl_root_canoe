@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Package release assets
+      run: |
+        cd toolkit_linux && zip -r ../toolkit_linux.zip . && cd ..
+        cd toolkit_windows && zip -r ../toolkit_windows.zip . && cd ..
+        cd magisk_module && zip -r ../magisk_module.zip . && cd ..
+        cd vbmetafixer_linux && zip -r ../vbmetafixer_linux.zip . && cd ..
+        cd vbmetafixer_windows && zip -r ../vbmetafixer_windows.zip . && cd ..
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: ${{ github.ref_name }}
+        generate_release_notes: false
+        files: |
+          toolkit_linux.zip
+          toolkit_windows.zip
+          magisk_module.zip
+          vbmetafixer_linux.zip
+          vbmetafixer_windows.zip
