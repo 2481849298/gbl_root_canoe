@@ -31,3 +31,12 @@ extracted/
 submodules/uefi/edk2/build_modulepkg.log
 
 submodules/unsigned_abl.elf
+
+# 构建产物（不入库，靠编译/CI 生成）
+dist/
+release/
+*.bak
+
+# 工具目录
+.serena/
+.claude/
