@@ -89,6 +89,7 @@
   LinuxLoaderLib.c
   DeviceInfo.c
   ShutdownServices.c
+  fastboot_ui.c
 
 [BuildOptions]
   GCC:*_*_*_CC_FLAGS = $(UBSAN_UEFI_GCC_FLAG_UNDEFINED)
@@ -113,6 +114,7 @@
 [Protocols]
   gEfiSimpleTextInProtocolGuid
   gEfiSimpleTextOutProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
   gEfiBlockIoProtocolGuid
   gEfiDiskIoProtocolGuid
   gEfiPartitionRecordGuid

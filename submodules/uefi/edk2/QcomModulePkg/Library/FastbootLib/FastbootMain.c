@@ -392,6 +392,8 @@ EFI_STATUS HandleUsbEvents (VOID)
   return Status;
 }
 
+#include "fastboot_ui.h"
+
 /* Initialize and start fastboot */
 EFI_STATUS FastbootInitialize (VOID)
 {
@@ -406,6 +408,7 @@ EFI_STATUS FastbootInitialize (VOID)
     return Status;
   }
   StoreRootDeviceType ();
+  FastbootUiDrawMain ();
   /* Wait for USB events in tight loop */
   while (1) {
     Status = HandleUsbEvents ();

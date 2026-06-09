@@ -537,6 +537,18 @@ BOOLEAN patch_string_jump(CHAR8* buffer, INT32 size) {
     return patched;
 }
 
+/* 检测 OPlus 橙色警告文本。警告补丁与周边 bootstate 补丁均按 OPlus ABL 校准，
+ * 集成自动 patch 路径在缺少该文本时跳过 patch，避免误伤其它机型。 */
+BOOLEAN has_warning_text(CHAR8* buffer, INT32 size) {
+    const CHAR8 needle[] = "Orange State\n";
+    INT32 needle_len = sizeof(needle) - 1;
+    for (INT32 i = 0; i + needle_len <= size; i++) {
+        if (memcmp_patcher(buffer + i, needle, needle_len) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 INT32 find_warning_offset(CHAR8* buffer, INT32 size, UINT64 load_base) {
     if (size < 24) return 0;
 

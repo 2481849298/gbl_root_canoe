@@ -72,6 +72,7 @@
 #include "KeyPad.h"
 #include "LinuxLoaderLib.h"
 #include <FastbootLib/FastbootMain.h>
+#include <FastbootLib/fastboot_ui.h>
 #include <Library/DeviceInfo.h>
 #include <Library/DrawUI.h>
 #include <Library/MemoryAllocationLib.h>
@@ -867,11 +868,18 @@ STATIC VOID LoadIntegratedEfi(VOID){
     CHAR8* buffer;
     UINT32 size;
     LoadAblFromPartition(&buffer, &size);
+    /* The patches are calibrated for OPlus ABLs; on other devices the warning
+     * text is absent, so boot the ABL unpatched instead of risking a bad patch. */
+    if(!has_warning_text(buffer, (INT32)size)) {
+        PRINT(L"LoadIntegratedEfi: OPlus warning not found, booting ABL unpatched\n");
+        BootEfiImage(buffer, size);
+        return;
+    }
     if(!PatchBuffer(buffer, size)) {
         PRINT(L"LoadIntegratedEfi: Failed to patch buffer\n");
         FreePool(buffer);
         return;
-    } 
+    }
     BootEfiImage(buffer, size);
 #endif
 }
@@ -965,6 +973,7 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   RebootDevice (NORMAL_MODE);
 #endif
   DEBUG ((EFI_D_INFO, "Launching fastboot\n"));
+  FastbootUiEntryTransition ();
   Status = FastbootInitialize ();
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "Failed to Launch Fastboot App: %d\n", Status));
